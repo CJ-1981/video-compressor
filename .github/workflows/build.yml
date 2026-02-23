@@ -1,0 +1,66 @@
+name: Build Windows Executable
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller tkinterdnd2
+
+    - name: Download FFmpeg
+      run: |
+        echo "Downloading FFmpeg..."
+        Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "ffmpeg.zip"
+        Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg_temp"
+        Copy-Item "ffmpeg_temp\ffmpeg-*-essentials_build\bin\ffmpeg.exe" -Destination "ffmpeg.exe"
+        Copy-Item "ffmpeg_temp\ffmpeg-*-essentials_build\bin\ffprobe.exe" -Destination "ffprobe.exe"
+        Remove-Item -Recurse -Force "ffmpeg_temp", "ffmpeg.zip"
+
+    - name: Build executable
+      run: |
+        pyinstaller --name=VideoCompressor --onefile --windowed --add-data="ffmpeg.exe;." --add-data="ffprobe.exe;." --add-data="config/presets.json;config" --hidden-import=tkinterdnd2 main.py
+
+    - name: Create release info
+      run: |
+        echo "Built VideoCompressor.exe" > release_notes.txt
+        echo "" >> release_notes.txt
+        echo "## Features" >> release_notes.txt
+        echo "- Video and image compression" >> release_notes.txt
+        echo "- Drag & drop support" >> release_notes.txt
+        echo "- Batch processing" >> release_notes.txt
+        echo "- FFmpeg included (no installation needed)" >> release_notes.txt
+        echo "" >> release_notes.txt
+        echo "Just run the exe - no setup required!" >> release_notes.txt
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: VideoCompressor-windows
+        path: dist/VideoCompressor.exe
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/VideoCompressor.exe
+        body_path: release_notes.txt
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
