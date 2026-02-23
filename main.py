@@ -10,10 +10,21 @@ if project_root not in sys.path:
 
 from gui.main_window import MainWindow
 
+# Try to import tkinterdnd2 for drag-and-drop support
+try:
+    from tkinterdnd2 import TkinterDnD
+    HAS_DND = True
+except ImportError:
+    HAS_DND = False
+
 
 def main():
     """Main application entry point."""
-    root = tk.Tk()
+    # Use TkinterDnD.Tk() if available, otherwise use regular tk.Tk()
+    if HAS_DND:
+        root = TkinterDnD.Tk()
+    else:
+        root = tk.Tk()
     root.title("Video/Image Compressor")
 
     # Set window icon if available

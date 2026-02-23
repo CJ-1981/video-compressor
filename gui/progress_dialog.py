@@ -25,7 +25,7 @@ class ProgressDialog:
         # Create dialog window
         self.dialog = tk.Toplevel(parent)
         self.dialog.title(title)
-        self.dialog.geometry("500x200")
+        self.dialog.geometry("550x280")
         self.dialog.resizable(False, False)
 
         # Make dialog modal (but allow abort)
@@ -34,8 +34,8 @@ class ProgressDialog:
 
         # Center the dialog
         self.dialog.update_idletasks()
-        x = (self.dialog.winfo_screenwidth() // 2) - (500 // 2)
-        y = (self.dialog.winfo_screenheight() // 2) - (200 // 2)
+        x = (self.dialog.winfo_screenwidth() // 2) - (550 // 2)
+        y = (self.dialog.winfo_screenheight() // 2) - (280 // 2)
         self.dialog.geometry(f"+{x}+{y}")
 
         self._create_widgets()
@@ -81,7 +81,7 @@ class ProgressDialog:
         self.progress_bar = ttk.Progressbar(
             main_frame,
             mode='determinate',
-            length=460
+            length=510
         )
         self.progress_bar.pack(pady=(0, 10))
 
@@ -95,7 +95,7 @@ class ProgressDialog:
 
         # Time info frame
         time_frame = ttk.Frame(main_frame)
-        time_frame.pack(pady=(0, 20))
+        time_frame.pack(pady=(0, 15))
 
         self.elapsed_label = ttk.Label(
             time_frame,
@@ -111,16 +111,24 @@ class ProgressDialog:
         )
         self.eta_label.pack(side=tk.LEFT)
 
-        # Button frame
+        # Button frame - ensure button is fully visible
         button_frame = ttk.Frame(main_frame)
-        button_frame.pack()
+        button_frame.pack(pady=(10, 10), fill=tk.X, ipady=5)
 
-        # Abort button
-        self.abort_button = ttk.Button(
+        # Abort button - make it more prominent with red color indication
+        self.abort_button = tk.Button(
             button_frame,
             text="Abort",
             command=self._abort,
-            width=15
+            width=25,
+            height=2,
+            bg="#ff4444",
+            fg="white",
+            font=('Segoe UI', 11, 'bold'),
+            relief=tk.RAISED,
+            cursor="hand2",
+            padx=20,
+            pady=10
         )
         self.abort_button.pack()
 

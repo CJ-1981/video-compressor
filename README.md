@@ -17,6 +17,9 @@ A desktop application for compressing videos and images using FFmpeg. Provides a
 - **Apple MOV Support**: Proper handling of iPhone MOV recordings (H.264/H.265)
 - **Batch Processing**: Compress multiple files at once
 - **Progress Tracking**: Real-time progress updates with time estimates
+- **Abort Functionality**: Stop compression anytime with proper FFmpeg process termination
+- **Drag & Drop**: Drag files directly into the application window
+- **File Management**: Remove individual files or clear all with keyboard shortcuts
 - **Configurable Quality**: Three compression levels (low, medium, high)
 - **Flexible Output**: Common output directory or per-folder subdirectories
 - **FFmpeg Based**: Industry-standard compression quality
@@ -50,7 +53,10 @@ sudo apt install ffmpeg
 ## Installation
 
 1. Clone or download this repository
-2. No Python packages needed - uses only standard library
+2. Install required dependencies (for drag-and-drop support):
+   ```bash
+   pip install tkinterdnd2
+   ```
 3. Ensure FFmpeg is in your system PATH or configure the path in Settings
 
 ## Usage
@@ -63,12 +69,20 @@ python main.py
 
 ### Basic Workflow
 
-1. **Add Files**: Click "Add Files..." or "Add Folder..." to select media files
-2. **Choose Level**: Select compression level (Low/Medium/High)
-3. **Configure Output** (optional): Click "Browse..." to set output directory
-4. **Compress**: Click "Compress" to start
-5. **Monitor Progress**: View progress in the dialog window
-6. **Abort**: Click "Abort" to stop compression (partial files cleaned up)
+1. **Add Files**: Use any of these methods:
+   - Click "Add Files..." or "Add Folder..." buttons
+   - Drag and drop files/folders onto the window
+   - Drag and drop files onto the file list
+2. **Manage Files** (optional):
+   - Click "Remove Selected" to remove specific files
+   - Press `Delete` or `Backspace` to remove selected files
+   - Right-click for context menu (Remove Selected / Clear All)
+   - Click "Clear All" to remove all files
+3. **Choose Level**: Select compression level (Low/Medium/High)
+4. **Configure Output** (optional): Click "Browse..." to set output directory
+5. **Compress**: Click "Compress" to start
+6. **Monitor Progress**: View progress in the dialog window with time estimates
+7. **Abort**: Click red "Abort" button to stop compression (FFmpeg processes terminated immediately, partial files cleaned up)
 
 ### Settings
 
@@ -159,6 +173,15 @@ video_compressor/
 - iPhone recordings are fully supported
 - Output defaults to MP4 format for compatibility
 - Original MOV format preserved in subdirectory mode
+
+**Drag & Drop not working:**
+- Install tkinterdnd2: `pip install tkinterdnd2`
+- Restart the application after installation
+
+**Abort button doesn't stop compression:**
+- This should now work correctly with aggressive process termination
+- FFmpeg processes are killed within milliseconds of clicking Abort
+- Partial output files are automatically cleaned up
 
 ## License
 

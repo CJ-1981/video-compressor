@@ -182,31 +182,69 @@ class VideoCompressor(BaseCompressor):
                 errors='replace'  # Handle encoding errors
             )
 
-            # Parse stderr for progress
-            while True:
-                # Check abort BEFORE reading
+            # Parse stderr for progress with non-blocking read
+            import threading
+            stop_reading = threading.Event()
+
+            def read_stderr():
+                """Read stderr in a separate thread to avoid blocking."""
+                for line in iter(process.stderr.readline, ''):
+                    if stop_reading.is_set():
+                        break
+                    if line:
+                        progress = self._parse_progress(line, duration)
+                        if progress is not None:
+                            self.progress.update(progress, 100)
+                            self._notify_progress()
+
+            # Start reading stderr in background thread
+            reader_thread = threading.Thread(target=read_stderr, daemon=True)
+            reader_thread.start()
+
+            # Monitor process and check for abort
+            while process.poll() is None:
                 if self._should_abort():
-                    process.terminate()
-                    time.sleep(0.5)
-                    if process.poll() is None:
-                        process.kill()
+                    # Signal reader thread to stop
+                    stop_reading.set()
+
+                    # Terminate the process aggressively
+                    try:
+                        process.terminate()
+                        time.sleep(0.2)
+                        if process.poll() is None:
+                            process.kill()
+                            time.sleep(0.1)
+
+                        # On Windows, also try to kill any orphaned ffmpeg processes
+                        if os.name == 'nt':
+                            try:
+                                subprocess.run(
+                                    ['taskkill', '/F', '/IM', 'ffmpeg.exe'],
+                                    capture_output=True,
+                                    timeout=2
+                                )
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+
                     # Clean up partial output file
                     if os.path.exists(output_path):
-                        os.remove(output_path)
+                        try:
+                            os.remove(output_path)
+                        except OSError:
+                            pass
+
                     self.progress.status = "aborted"
                     self._notify_progress()
                     return False
 
-                line = process.stderr.readline()
-                if not line and process.poll() is not None:
-                    break
+                time.sleep(0.05)  # Check abort flag frequently
 
-                progress = self._parse_progress(line, duration)
-                if progress is not None:
-                    self.progress.update(progress, 100)
-                    self._notify_progress()
+            # Wait for reader thread to finish
+            reader_thread.join(timeout=1.0)
 
-            return_code = process.wait()
+            return_code = process.poll()
 
             if return_code == 0:
                 self.progress.update(100, 100)

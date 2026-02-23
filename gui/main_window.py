@@ -36,6 +36,7 @@ class MainWindow:
         self._check_ffmpeg()
         self._create_widgets()
         self._create_menu()
+        self._setup_drag_drop()
 
     def _load_config(self):
         """Load configuration from file."""
@@ -121,6 +122,14 @@ class MainWindow:
             text="Clear All",
             command=self._clear_files,
             width=15
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        # Remove Selected button
+        ttk.Button(
+            top_frame,
+            text="Remove Selected",
+            command=self._remove_selected,
+            width=15
         ).pack(side=tk.LEFT)
 
         # FFmpeg status indicator
@@ -153,6 +162,13 @@ class MainWindow:
 
         self.file_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Bind keyboard events
+        self.file_tree.bind('<Delete>', lambda e: self._remove_selected())
+        self.file_tree.bind('<BackSpace>', lambda e: self._remove_selected())
+
+        # Bind right-click for context menu
+        self.file_tree.bind('<Button-3>', self._show_context_menu)
 
         # Bottom frame for options and actions
         bottom_frame = ttk.Frame(self.root, padding=10)
@@ -272,6 +288,123 @@ class MainWindow:
         """Clear all selected files."""
         self.selected_files.clear()
         self.file_tree.delete(*self.file_tree.get_children())
+
+    def _remove_selected(self):
+        """Remove selected files from the list."""
+        selected_items = self.file_tree.selection()
+        if not selected_items:
+            return
+
+        # Get the indices of selected items
+        indices_to_remove = []
+        for item in selected_items:
+            # Get the index of this item in the tree
+            index = self.file_tree.index(item)
+            indices_to_remove.append(index)
+
+        # Remove from selected_files list (in reverse order to maintain indices)
+        for index in sorted(indices_to_remove, reverse=True):
+            if 0 <= index < len(self.selected_files):
+                self.selected_files.pop(index)
+
+        # Delete from treeview
+        self.file_tree.delete(*selected_items)
+
+    def _setup_drag_drop(self):
+        """Setup drag and drop functionality."""
+        try:
+            from tkinterdnd2 import DND_FILES
+
+            # Make the root window a drop target
+            self.root.drop_target_register(DND_FILES)
+            self.root.dnd_bind('<<Drop>>', self._on_drop)
+            self.root.dnd_bind('<<DragEnter>>', self._on_drag_enter)
+            self.root.dnd_bind('<<DragLeave>>', self._on_drag_leave)
+
+            # Also make the file treeview accept drops
+            self.file_tree.drop_target_register(DND_FILES)
+            self.file_tree.dnd_bind('<<Drop>>', self._on_drop)
+
+            self.drag_drop_enabled = True
+        except (ImportError, AttributeError):
+            # Library not available or root not set up for DnD, silently skip
+            self.drag_drop_enabled = False
+
+    def _on_drop(self, event):
+        """Handle file drop event."""
+        # Extract file paths from the drop data
+        data = event.data
+
+        # tkinterdnd2 provides data in different formats
+        if hasattr(event, 'data') and data:
+            # Handle curly braces format on Windows (tkinterdnd2 format)
+            if data.startswith('{') and '}' in data:
+                files = self._parse_tkinterdnd2_paths(data)
+            else:
+                # Fallback: try splitting by whitespace/newlines
+                files = [f.strip() for f in data.replace('\n', ' ').split() if f.strip()]
+
+            # Remove any leading/trailing braces or quotes
+            files = [f.strip('{}').strip('"').strip("'") for f in files]
+
+            # Add valid files
+            if files:
+                valid_files = [f for f in files if os.path.exists(f)]
+                if valid_files:
+                    self._add_files_to_list(valid_files)
+
+    def _parse_tkinterdnd2_paths(self, data: str) -> list:
+        """Parse file paths from tkinterdnd2 drop data (Windows format)."""
+        files = []
+        current = ""
+        in_braces = False
+
+        for char in data:
+            if char == '{':
+                in_braces = True
+                current = ""
+            elif char == '}':
+                if current:
+                    files.append(current)
+                current = ""
+                in_braces = False
+            elif char in ' \n\r' and not in_braces:
+                # Skip whitespace outside braces
+                continue
+            else:
+                current += char
+
+        return files
+
+    def _on_drag_enter(self, event):
+        """Handle drag enter event - visual feedback."""
+        self.file_tree.configure(selectbackground='#4a6fa5')
+
+    def _on_drag_leave(self, event):
+        """Handle drag leave event - restore visual."""
+        self.file_tree.configure(selectbackground='#4a6fa5' if ttk.Style().theme_use() == 'vista' else '#c3c3c3')
+
+    def _show_context_menu(self, event):
+        """Show right-click context menu for file list."""
+        # Select the item that was right-clicked
+        item = self.file_tree.identify_row(event.y)
+        if item:
+            # If the item isn't already selected, select it
+            selection = self.file_tree.selection()
+            if item not in selection:
+                self.file_tree.selection_set(item)
+
+            # Create context menu
+            context_menu = tk.Menu(self.root, tearoff=0)
+            context_menu.add_command(label="Remove Selected", command=self._remove_selected)
+            context_menu.add_separator()
+            context_menu.add_command(label="Clear All", command=self._clear_files)
+
+            # Show menu at cursor position
+            try:
+                context_menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                context_menu.grab_release()
 
     def _browse_output(self):
         """Browse for output directory."""

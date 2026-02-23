@@ -174,23 +174,41 @@ class ImageCompressor(BaseCompressor):
                 errors='replace'
             )
 
-            # Wait for process with abort checking
+            # Monitor process and check for abort more frequently
             while process.poll() is None:
                 if self._should_abort():
-                    process.terminate()
-                    time.sleep(0.5)
-                    if process.poll() is None:
-                        process.kill()
+                    # More aggressive termination
+                    try:
+                        process.terminate()
+                        time.sleep(0.2)
+                        if process.poll() is None:
+                            process.kill()
+                            time.sleep(0.1)
+
+                        # On Windows, also try to kill any orphaned ffmpeg processes
+                        if os.name == 'nt':
+                            try:
+                                subprocess.run(
+                                    ['taskkill', '/F', '/IM', 'ffmpeg.exe'],
+                                    capture_output=True,
+                                    timeout=2
+                                )
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+
                     # Clean up partial output file
                     if os.path.exists(output_path):
                         try:
                             os.remove(output_path)
                         except OSError:
                             pass
+
                     self.progress.status = "aborted"
                     self._notify_progress()
                     return False
-                time.sleep(0.1)
+                time.sleep(0.05)  # Check abort flag more frequently
 
             return_code = process.wait()
 
