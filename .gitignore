@@ -52,6 +52,12 @@ output/
 *.bak
 *.log
 
+# FFmpeg binaries (too large for repo, bundled in exe)
+ffmpeg.exe
+ffprobe.exe
+ffmpeg
+ffprobe
+
 # Screenshots (keep in repo, but ignore if in root)
 # images/
 
