@@ -1,0 +1,9 @@
+# Video/Image Compressor Requirements
+# No external Python packages required - uses only standard library
+
+# Required: FFmpeg (external dependency)
+# Install from: https://ffmpeg.org/download.html
+# Or use package manager:
+#   Windows: chocolatey install ffmpeg
+#   macOS: brew install ffmpeg
+#   Linux: sudo apt install ffmpeg

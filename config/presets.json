@@ -1,0 +1,49 @@
+{
+  "video": {
+    "low": {
+      "crf": 28,
+      "preset": "faster",
+      "audio_bitrate": "128k",
+      "codec": "libx264",
+      "output_format": "mp4",
+      "threads": 2
+    },
+    "medium": {
+      "crf": 23,
+      "preset": "medium",
+      "audio_bitrate": "192k",
+      "codec": "libx264",
+      "output_format": "mp4",
+      "threads": 4
+    },
+    "high": {
+      "crf": 18,
+      "preset": "fast",
+      "audio_bitrate": "320k",
+      "codec": "libx264",
+      "output_format": "mp4",
+      "threads": 4
+    }
+  },
+  "image": {
+    "low": {
+      "quality": 70
+    },
+    "medium": {
+      "quality": 80
+    },
+    "high": {
+      "quality": 90
+    }
+  },
+  "output": {
+    "default_subdirectory": "compressed_output",
+    "use_common_output": false,
+    "common_output_path": "",
+    "preserve_original": true
+  },
+  "ffmpeg": {
+    "path": "",
+    "threads": 4
+  }
+}
