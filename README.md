@@ -1,6 +1,10 @@
 # Video/Image Compressor
 
+[![Build](https://github.com/CJ-1981/video-compressor/actions/workflows/build.yml/badge.svg)](https://github.com/CJ-1981/video-compressor/actions/workflows/build.yml)
+
 A desktop application for compressing videos and images using FFmpeg. Provides a user-friendly GUI with configurable compression levels, progress visualization, and flexible output options.
+
+**[Download Latest Release](https://github.com/CJ-1981/video-compressor/releases/latest)** - Standalone Windows executable (FFmpeg included)
 
 ## Screenshots
 
