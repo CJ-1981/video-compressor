@@ -202,7 +202,6 @@ class ProgressDialog:
                     self.abort_button.config(text="Close", command=self.dialog.destroy)
                 except (tk.TclError, AttributeError):
                     pass
-        elif status == "completed" and current_file:
         elif status == "running":
             self.is_completed = False
 
@@ -218,7 +217,6 @@ class ProgressDialog:
         """Handle abort button click."""
         if self.on_abort:
             self.on_abort()
-        else:
 
         self.status_label.config(text="Aborting...")
         self.abort_button.config(state=tk.DISABLED)
@@ -246,7 +244,6 @@ class ProgressDialog:
         # Otherwise, treat close as abort
         elif self.on_abort and self.abort_button['state'] == tk.NORMAL:
             self._abort()
-        else:
 
     def set_start_time(self):
         """Set the start time for time calculations."""

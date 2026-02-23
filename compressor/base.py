@@ -55,7 +55,6 @@ class BaseCompressor(ABC):
         """Check if abort was requested."""
         with self._lock:
             result = self._abort_flag
-        if result:
         return result
 
     def reset(self):
