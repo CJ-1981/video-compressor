@@ -33,6 +33,14 @@ class VideoCompressor(BaseCompressor):
 
     def _find_ffmpeg(self) -> Optional[str]:
         """Find FFmpeg executable."""
+        # Check if bundled with PyInstaller (in _MEIPASS or same directory)
+        if getattr(sys, 'frozen', False):
+            # Running as compiled executable
+            bundle_dir = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(sys.executable)
+            bundled_ffmpeg = os.path.join(bundle_dir, 'ffmpeg.exe' if os.name == 'nt' else 'ffmpeg')
+            if os.path.exists(bundled_ffmpeg):
+                return bundled_ffmpeg
+
         if self.ffmpeg_path:
             custom_path = os.path.join(self.ffmpeg_path, 'ffmpeg')
             if os.name == 'nt':

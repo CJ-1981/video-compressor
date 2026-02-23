@@ -52,12 +52,40 @@ sudo apt install ffmpeg
 
 ## Installation
 
+### Option 1: Standalone Executable (Recommended)
+
+1. Download the latest `VideoCompressor.exe` from [Releases](https://github.com/CJ-1981/video-compressor/releases)
+2. No installation required - FFmpeg is included
+3. Just run the executable
+
+### Option 2: From Source
+
 1. Clone or download this repository
-2. Install required dependencies (for drag-and-drop support):
+2. Install required dependencies:
    ```bash
    pip install tkinterdnd2
    ```
 3. Ensure FFmpeg is in your system PATH or configure the path in Settings
+
+### Building from Source
+
+To create a standalone executable:
+
+1. Install PyInstaller:
+   ```bash
+   pip install pyinstaller
+   ```
+
+2. Download FFmpeg static build:
+   - Windows: https://www.gyan.dev/ffmpeg/builds/ (ffmpeg-release-essentials.zip)
+   - Extract and copy `ffmpeg.exe` and `ffprobe.exe` to project root
+
+3. Build the executable:
+   ```bash
+   python build_exe.py
+   ```
+
+The executable will be created in `dist/VideoCompressor.exe` and includes FFmpeg.
 
 ## Usage
 
