@@ -11,10 +11,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
@@ -38,25 +38,27 @@ jobs:
 
     - name: Create release info
       run: |
-        echo "Built VideoCompressor.exe" > release_notes.txt
-        echo "" >> release_notes.txt
-        echo "## Features" >> release_notes.txt
-        echo "- Video and image compression" >> release_notes.txt
-        echo "- Drag & drop support" >> release_notes.txt
-        echo "- Batch processing" >> release_notes.txt
-        echo "- FFmpeg included (no installation needed)" >> release_notes.txt
-        echo "" >> release_notes.txt
-        echo "Just run the exe - no setup required!" >> release_notes.txt
+        @"
+        Built VideoCompressor.exe
+
+        ## Features
+        - Video and image compression
+        - Drag & drop support
+        - Batch processing
+        - FFmpeg included (no installation needed)
+
+        Just run the exe - no setup required!
+        "@ | Out-File -FilePath release_notes.txt
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: VideoCompressor-windows
         path: dist/VideoCompressor.exe
 
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/v')
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: dist/VideoCompressor.exe
         body_path: release_notes.txt
