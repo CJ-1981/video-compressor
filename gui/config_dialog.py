@@ -17,7 +17,7 @@ class ConfigDialog:
         # Create dialog window
         self.dialog = tk.Toplevel(parent)
         self.dialog.title("Settings")
-        self.dialog.geometry("600x450")
+        self.dialog.geometry("600x550")
         self.dialog.resizable(False, False)
 
         # Make dialog modal
