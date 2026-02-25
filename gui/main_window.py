@@ -145,16 +145,18 @@ class MainWindow:
         list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
 
         # Treeview for file list
-        columns = ('name', 'size', 'type')
+        columns = ('name', 'size', 'type', 'status')
         self.file_tree = ttk.Treeview(list_frame, columns=columns, show='headings', selectmode='extended')
 
         self.file_tree.heading('name', text='File Name')
         self.file_tree.heading('size', text='Size')
         self.file_tree.heading('type', text='Type')
+        self.file_tree.heading('status', text='Status')
 
-        self.file_tree.column('name', width=400)
+        self.file_tree.column('name', width=350)
         self.file_tree.column('size', width=100)
         self.file_tree.column('type', width=100)
+        self.file_tree.column('status', width=100)
 
         # Scrollbar
         scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.file_tree.yview)
@@ -162,6 +164,13 @@ class MainWindow:
 
         self.file_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Define item tags for status coloring
+        self.file_tree.tag_configure('pending', foreground='gray')
+        self.file_tree.tag_configure('running', foreground='blue')
+        self.file_tree.tag_configure('completed', foreground='green')
+        self.file_tree.tag_configure('failed', foreground='red')
+        self.file_tree.tag_configure('aborted', foreground='orange')
 
         # Bind keyboard events
         self.file_tree.bind('<Delete>', lambda e: self._remove_selected())
@@ -282,7 +291,12 @@ class MainWindow:
                 }.get(media_type, "Unknown")
 
                 # Add to treeview
-                self.file_tree.insert('', tk.END, values=(os.path.basename(file_path), size_str, type_str))
+                self.file_tree.insert(
+                    '', 
+                    tk.END, 
+                    values=(os.path.basename(file_path), size_str, type_str, "Pending"),
+                    tags=('pending',)
+                )
 
     def _clear_files(self):
         """Clear all selected files."""
@@ -498,6 +512,13 @@ class MainWindow:
             )
             return
 
+        # Reset all file statuses to Pending
+        for item_id in self.file_tree.get_children():
+            values = list(self.file_tree.item(item_id, 'values'))
+            if len(values) > 3:
+                values[3] = "Pending"
+                self.file_tree.item(item_id, values=values, tags=('pending',))
+
         # Disable compress button
         self.compress_button.config(state=tk.DISABLED)
 
@@ -554,6 +575,22 @@ class MainWindow:
         # Reset abort flag at start
         self._abort_requested = False
 
+        # Get item IDs for all files in the treeview
+        tree_items = self.file_tree.get_children()
+
+        def update_item_status(idx, status, tag):
+            """Safely update treeview item status from thread."""
+            if idx < len(tree_items):
+                item_id = tree_items[idx]
+                try:
+                    # Get current values and update the status column (index 3)
+                    values = list(self.file_tree.item(item_id, 'values'))
+                    if len(values) > 3:
+                        values[3] = status
+                        self.file_tree.item(item_id, values=values, tags=(tag,))
+                except tk.TclError:
+                    pass
+
         ffmpeg_path = self.config.get('ffmpeg', {}).get('path', '')
         level = self.compression_level.get()
 
@@ -582,7 +619,13 @@ class MainWindow:
         for i, file_path in enumerate(self.selected_files):
             # Check for abort at start of each file
             if self._abort_requested:
+                # Mark remaining files as aborted
+                for j in range(i, total_files):
+                    self.root.after(0, lambda idx=j: update_item_status(idx, "Aborted", "aborted"))
                 break
+
+            # Mark current file as running
+            self.root.after(0, lambda idx=i: update_item_status(idx, "Running", "running"))
 
             # Determine output path
             if output_dir:
@@ -609,37 +652,47 @@ class MainWindow:
             media_type = detect_media_type(file_path)
             result = False
 
-            if media_type == MediaType.VIDEO:
-                result = self.video_compressor.compress(
-                    file_path,
-                    output_file,
-                    level,
-                    self.config.get('video', {}).get(level, {})
-                )
-            elif media_type == MediaType.IMAGE:
-                result = self.image_compressor.compress(
-                    file_path,
-                    output_file,
-                    level,
-                    self.config.get('image', {}).get(level, {})
-                )
-            else:
-                # Try video compressor for unknown types
-                result = self.video_compressor.compress(
-                    file_path,
-                    output_file,
-                    level,
-                    self.config.get('video', {}).get(level, {})
-                )
+            try:
+                if media_type == MediaType.VIDEO:
+                    result = self.video_compressor.compress(
+                        file_path,
+                        output_file,
+                        level,
+                        self.config.get('video', {}).get(level, {})
+                    )
+                elif media_type == MediaType.IMAGE:
+                    result = self.image_compressor.compress(
+                        file_path,
+                        output_file,
+                        level,
+                        self.config.get('image', {}).get(level, {})
+                    )
+                else:
+                    # Try video compressor for unknown types
+                    result = self.video_compressor.compress(
+                        file_path,
+                        output_file,
+                        level,
+                        self.config.get('video', {}).get(level, {})
+                    )
+            except Exception as e:
+                print(f"Error compressing {file_path}: {e}")
+                result = False
 
             # Check if aborted during compression
             if self._abort_requested:
+                self.root.after(0, lambda idx=i: update_item_status(idx, "Aborted", "aborted"))
+                # Mark remaining files as aborted
+                for j in range(i + 1, total_files):
+                    self.root.after(0, lambda idx=j: update_item_status(idx, "Aborted", "aborted"))
                 break
 
             if result:
                 successful += 1
+                self.root.after(0, lambda idx=i: update_item_status(idx, "Completed", "completed"))
             else:
                 failed += 1
+                self.root.after(0, lambda idx=i: update_item_status(idx, "Failed", "failed"))
 
             # Check for errors (safely)
             video_error = getattr(self.video_compressor, 'progress', None)
@@ -660,6 +713,7 @@ class MainWindow:
                     except (tk.TclError, AttributeError):
                         pass
                 self.root.after(0, safe_set_error)
+
 
         # Re-enable compress button
         self.root.after(0, lambda: self.compress_button.config(state=tk.NORMAL))

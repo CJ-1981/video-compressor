@@ -19,8 +19,8 @@ A desktop application for compressing videos and images using FFmpeg. Provides a
 - **Video Compression**: Compress MP4, MOV, AVI, MKV, and other video formats
 - **Image Compression**: Compress JPG, PNG, WebP images
 - **Apple MOV Support**: Proper handling of iPhone MOV recordings (H.264/H.265)
-- **Batch Processing**: Compress multiple files at once
-- **Progress Tracking**: Real-time progress updates with time estimates
+- **Batch Processing**: Compress multiple files at once with individual status tracking
+- **Progress Tracking**: Real-time progress updates in both the main window file list and a dedicated progress dialog with time estimates
 - **Abort Functionality**: Stop compression anytime with proper FFmpeg process termination
 - **Drag & Drop**: Drag files directly into the application window
 - **File Management**: Remove individual files or clear all with keyboard shortcuts
@@ -113,8 +113,10 @@ python main.py
 3. **Choose Level**: Select compression level (Low/Medium/High)
 4. **Configure Output** (optional): Click "Browse..." to set output directory
 5. **Compress**: Click "Compress" to start
-6. **Monitor Progress**: View progress in the dialog window with time estimates
-7. **Abort**: Click red "Abort" button to stop compression (FFmpeg processes terminated immediately, partial files cleaned up)
+6. **Monitor Progress**: 
+   - View overall progress in the dialog window with time estimates
+   - Track individual file status (Pending/Running/Completed/Failed) directly in the main window file list
+7. **Abort**: Click red "Abort" button to stop compression (FFmpeg processes terminated immediately, partial files cleaned up; remaining files marked as "Aborted" in list)
 
 ### Settings
 
